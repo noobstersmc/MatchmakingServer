@@ -1,8 +1,8 @@
-const Redis = require('ioredis')
-const subscriber = new Redis('redis-19702.c15.us-east-1-2.ec2.cloud.redislabs.com', 19702, {password: 'p1p2p3p4p5p6'});
-const pub = subscriber.duplicate();
+var Redis = require('ioredis');
+var subscriber = new Redis('redis-19702.c15.us-east-1-2.ec2.cloud.redislabs.com', 19702, {password: 'p1p2p3p4p5p6'});
+var pub = subscriber.duplicate();
 
-subscriber.subscribe("MatchMaking");
+subscriber.subscribe("Matchmaking");
 
 
 /**
@@ -38,20 +38,21 @@ subscriber.subscribe("MatchMaking");
 
  
 subscriber.on("message", function(channel, message) {
-   var json = JSON.parse(message)
+   var json = JSON.parse(message);
 
    pub.hmset(`Player:${json.UUID}`, 'UUID', json.UUID, 'MatchType', json.MatchType, 'LadderType', json.LadderType, 'Elo', json.Elo, 'Time', json.time).then(function(result){
-      console.log(result)
+      console.log(result);
       if(json.MatchType == "Unranked"){
-         pub.zadd('unrankedSet', 1, json.UUID)        
+         pub.zadd('unrankedSet', 1, json.UUID);
+         
 
       }else if(json.MatchType == "Ranked"){
-         pub.zadd('rankedSet', 1, json.UUID)
+         pub.zadd('rankedSet', 1, json.UUID);
 
       }
    }, function(err){
-      console.log(err)
-   })
+      console.log(err);
+   });
    
    
 
