@@ -31,8 +31,10 @@ function getRandomInt(min, max) {
 
 setTimeout(() => {
     dic.forEach(function(item){
-        var json = {'UUID':item.id, 'MatchType': 'Ranked', 'LadderType': 'BuildUHC', 'Time': `${Date.now()}`, 'Elo': `${1400 + getRandomInt(100, 200)}`};
+        var date = Date.now()
+        var json = {'UUID':item.id, 'MatchType': 'Ranked', 'LadderType': 'BuildUHC', 'Time': `${date}`, 'Elo': `${1400 + getRandomInt(100, 200)}`};
         console.log(json);
+
         redisConnection.publish('Matchmaking', JSON.stringify(json));
 
     });

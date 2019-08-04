@@ -1,6 +1,7 @@
 var Redis = require('ioredis');
 var subscriber = new Redis('redis-19702.c15.us-east-1-2.ec2.cloud.redislabs.com', 19702, {password: 'p1p2p3p4p5p6'});
 var pub = subscriber.duplicate();
+var wait = require('wait.for-es6');
 
 subscriber.subscribe("Matchmaking");
 
@@ -40,149 +41,50 @@ subscriber.subscribe("Matchmaking");
 subscriber.on("message", function(channel, message) {
    var json = JSON.parse(message);
 
-   pub.hmset(`Player:${json.UUID}`, 'UUID', json.UUID, 'MatchType', json.MatchType, 'LadderType', json.LadderType, 'Elo', json.Elo, 'Time', json.time).then(function(result){
+   pub.hmset(`Player:${json.UUID}`, 'UUID', json.UUID, 'MatchType', json.MatchType, 'LadderType', json.LadderType, 'Elo', json.Elo, 'Time', json.Time).then(function(result){
       console.log(result);
-      if(json.MatchType == "Unranked"){
-         pub.zadd('unrankedSet', 1, json.UUID);
-         
+      pub.zadd('rankSet', 0,json.UUID).then(function(result2){
+         console.log(result2);
+      },function(err){
+         console.log(err);
+      });
 
-      }else if(json.MatchType == "Ranked"){
-         pub.zadd('rankedSet', 1, json.UUID);
-
-      }
    }, function(err){
       console.log(err);
    });
-   
-   
-
-   /*
-   var [action, uuid, ladder, match] = message.split(' ');
-   pub.hmset(`Player:${uuid}`, 'UUID', uuid,'MatchmakingSettings', `ladder=${ladder} match=${match}`, 'RequestedOn', `${Date.now()}`, 'Elo', 1000).then(function(result) {
-      if(match == "Unranked"){
-         pub.zadd('unrankedSet', 0, `${uuid}`).then(function(result2){
-            console.log(result2) 
-         }, function(err){
-            console.log(err)
-         })
-      }else if(match == "Ranked"){
-         pub.zadd('rankedSet', 0, `${uuid}`).then(function(result2){
-            console.log(result2) 
-         }, function(err){
-            console.log(err)
-         })     
-
-      }else{
-         throw console.error('Error has been thrown unexpectadly');
-         
-      }      
-  }, function(err) {
-      console.log(err);
-  })
-*/
 });
-/*
-//Ranked
+
+
+
+function sortResults(prop, asc) {
+   people.sort(function(a, b) {
+       if (asc) {
+           return (a[prop] > b[prop]) ? 1 : ((a[prop] < b[prop]) ? -1 : 0);
+       } else {
+           return (b[prop] > a[prop]) ? 1 : ((b[prop] < a[prop]) ? -1 : 0);
+       }
+   });
+   renderResults();
+}
+
+function* getPlayerSet(){
+   var collection = yield wait.forMethod(pub, 'zrevrange', 'rankSet', start = 0, end =-1);
+
+   var json = JSON.parse('{"users":{}}');
+
+   for (var uuid of collection){
+      var getJson = yield wait.forMethod(pub, 'hgetall', `Player:${uuid}`);
+      var newUser = String(uuid);
+      json.users[newUser] = getJson;
+   }
+
+   console.log(json);
+
+}
+
+
+
 setInterval(function(){
-   var staticSet = new Set()
-   //Get all the players that are queued to ranked regardless of what gamemode it is.
-   pub.zrevrange('rankedSet', start=0, stop=-1).then(function(result){
-      var set = new Set(result)    
-      for(var i of set){
-         pub.hgetall(`Player:${i}`).then(function(result2){   
-            staticSet.add(result2)   
-         },function(err){
-            console.log(err)         
-         })
-      }   
-   }, function(err){
-      console.log(err)
-   })
+   wait.launchFiber(getPlayerSet);
 
-   setTimeout(function(){
-      for(var matchmaking of staticSet){
-         var base_elo = matchmaking.Elo
-         var offset =   (Date.now()- matchmaking.RequestedOn) / 1000
-         console.log(offset);
-         for(var inside of otherSet){
-            if(inside == matchmaking)continue
-            if(inside.MatchmakingSettings.split(' ')[0] != matchmaking.MatchmakingSettings.split(' ')[0]) continue
-
-         }
-
-      }
-      
-   },500)
-
-   
-setTimeout(function(){
-   for(var matchmaking of otherSet){
-      var matchType = matchmaking.MatchmakingSettings.split(' ')[0]
-      for(var inside of otherSet){
-         if(matchmaking === inside)continue
-         var insiderMatchType = inside.MatchmakingSettings.split(' ')[0]
-         if(insiderMatchType == matchType){
-            console.log('[Matchmaking]',inside.UUID, 'and', matchmaking.UUID, 'have matched for a', matchType)
-
-            pub.zrem('unrankedSet', inside.UUID,  matchmaking.UUID)
-
-            otherSet.delete(inside)
-            otherSet.delete(matchmaking)
-            break;
-         }else{
-            console.log(false)
-            //Add 1 to those who could not get in a match
-         }
-
-      }
-      
-   }
-
-}, 500)
-
-},500)
-
-
-//Unranked
-setInterval(function(){   
-var otherSet = new Set();
-pub.zrevrange('unrankedSet', start=0, stop=-1).then(function(result){
-   var set = new Set(result)
-   
-   for(var i of set){
-      pub.hgetall(`Player:${i}`).then(function(result2){   
-         otherSet.add(result2)   
-      },function(err){
-         console.log(err)         
-      })
-   }   
-}, function(err){
-   console.log(err)
-})
-
-setTimeout(function(){
-   for(var matchmaking of otherSet){
-      var matchType = matchmaking.MatchmakingSettings.split(' ')[0]
-      for(var inside of otherSet){
-         if(matchmaking === inside)continue
-         var insiderMatchType = inside.MatchmakingSettings.split(' ')[0]
-         if(insiderMatchType == matchType){
-            console.log('[Matchmaking]',inside.UUID, 'and', matchmaking.UUID, 'have matched for a', matchType)
-
-            pub.zrem('unrankedSet', inside.UUID,  matchmaking.UUID)
-
-            otherSet.delete(inside)
-            otherSet.delete(matchmaking)
-            break;
-         }else{
-            console.log(false)
-            //Add 1 to those who could not get in a match
-         }
-
-      }
-      
-   }
-
-}, 500)
-
-}, 500);*/
+}, 500);
