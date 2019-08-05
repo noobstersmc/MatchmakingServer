@@ -26,7 +26,7 @@ subscriber.on("message", function(channel, message) {
 function* getPlayerSet(){
    var collection = yield wait.forMethod(pub, 'zrevrange', 'rankSet', start = 0, end =-1);
    
-   var other = []
+   var other = [];
 
    for (var uuid of collection){
       var getJson = yield wait.forMethod(pub, 'hgetall', `Player:${uuid}`);
@@ -61,7 +61,7 @@ function handleMatchmakingRanked(playerCollection){
       for(var aname of playerCollection){   
          if(aname == obj)continue;
          if(aname.MatchType != obj.MatchType)continue;
-         if(!between(aname.Elo, obj.Elo - offset, obj.Elo + offset))continue
+         if(!between(aname.Elo, obj.Elo - offset, obj.Elo + offset))continue;
          var offset2 = parseInt(((Date.now() - aname.Time)/ 1000)) * 10;
          if(!between(obj.Elo, aname.Elo- offset2, aname.Elo + offset2))
          playerCollection.delete(obj);
@@ -84,7 +84,7 @@ function handleMatchmakingUnranked(playerCollection){
          pub.zrem('rankSet', aname.UUID, obj.UUID);
          console.log(`${obj.MatchType} ${obj.LadderType} Found:\n` + aname.UUID + " and " + obj.UUID);
 
-         var matchID = `game-${Math.random().toString(36).substring(2, 8)}`
+         var matchID = `game-${Math.random().toString(36).substring(2, 8)}`;
 
          var matchFound = {'MatchID': matchID, 'Player-1': obj, 'Player-2': aname};
          

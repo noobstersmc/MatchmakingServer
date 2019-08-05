@@ -18,7 +18,7 @@ function* sendMatches(){
 
     for(var name in names){
         var request = yield wait.for(rp, options = {uri: `https://api.mojang.com/users/profiles/minecraft/${names[name]}`});
-        if(request.body.length < 2)continue
+        if(request.body.length < 2)continue;
         var json = JSON.parse(request.body);
         var matchRequest = {'UUID':`${json.id}`, 'MatchType': 'Unranked', 'LadderType': 'BuildUHC', 'Time': `${Date.now()}`, 'Elo': `${1400 + getRandomInt(100, 200)}`};
         redisConnection.publish('Matchmaking', JSON.stringify(matchRequest));
