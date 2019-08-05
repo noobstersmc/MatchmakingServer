@@ -74,8 +74,7 @@ function handleMatchmakingRanked(playerCollection){
 }
 
 function handleMatchmakingUnranked(playerCollection){
-   if(playerCollection.size == 0)return;
-   
+   if(playerCollection.size == 0)return;   
    for(var obj of playerCollection){
       for(var aname of playerCollection){   
          if(aname == obj)continue;
@@ -83,7 +82,13 @@ function handleMatchmakingUnranked(playerCollection){
          playerCollection.delete(obj);
          playerCollection.delete(aname);
          pub.zrem('rankSet', aname.UUID, obj.UUID);
-         console.log(`${obj.MatchType} ${obj.LadderType} Found:\n` + aname.Elo + " and " + obj.Elo);
+         console.log(`${obj.MatchType} ${obj.LadderType} Found:\n` + aname.UUID + " and " + obj.UUID);
+
+         var matchID = `game-${Math.random().toString(36).substring(2, 8)}`
+
+         var matchFound = {'MatchID': matchID, 'Player-1': obj, 'Player-2': aname};
+         
+         pub.publish('MatchFound', JSON.stringify(matchFound));
          break;
       }
    }

@@ -20,7 +20,7 @@ function* sendMatches(){
         var request = yield wait.for(rp, options = {uri: `https://api.mojang.com/users/profiles/minecraft/${names[name]}`});
         if(request.body.length < 2)continue
         var json = JSON.parse(request.body);
-        var matchRequest = {'UUID':`${json.id}`, 'MatchType': 'Ranked', 'LadderType': 'BuildUHC', 'Time': `${Date.now()}`, 'Elo': `${1400 + getRandomInt(100, 200)}`};
+        var matchRequest = {'UUID':`${json.id}`, 'MatchType': 'Unranked', 'LadderType': 'BuildUHC', 'Time': `${Date.now()}`, 'Elo': `${1400 + getRandomInt(100, 200)}`};
         redisConnection.publish('Matchmaking', JSON.stringify(matchRequest));
         console.log(`${names[name]} request sent:\n` + JSON.stringify(matchRequest, null, 2));
     }
@@ -29,20 +29,3 @@ function* sendMatches(){
 }
 
 wait.launchFiber(sendMatches);
-
-/*
-
-
-setTimeout(() => {
-    dic.forEach(function(item){
-        var date = Date.now()
-        var json = {'UUID':item.id, 'MatchType': 'Ranked', 'LadderType': 'BuildUHC', 'Time': `${date}`, 'Elo': `${1400 + getRandomInt(100, 200)}`};
-        console.log(json);
-
-        redisConnection.publish('Matchmaking', JSON.stringify(json));
-
-    });
-    process.exit(1);
-    
-}, 500);
-*/
